@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="jp">
+<head>
+    <title>CharacterViewer</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no,minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            font-family: monospace;
+            margin:   0;
+            overflow: hidden;
+            position: fixed;
+            width:    100%;
+            height:   100vh;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        canvas {
+            position: absolute;
+            top:  0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+<script src="js/three.js/three.js"></script>
+<script src="js/three.ar.js"></script>
+<script src="js/three.js/VRControls.js"></script>
+<script src="js/mmdparser.min.js"></script>
+<script src="js/charsetencoder.min.js"></script>
+<script src="js/ammo.js"></script>
+<script src="js/TGALoader.js"></script>
+<script src="js/MMDLoader.js"></script>
+<script src="js/CCDIKSolver.js"></script>
+<script src="js/MMDPhysics.js"></script>
+<script src="js/Detector.js"></script>
+<script src="js/stats.min.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script>
+
+var vrFrameData,vrDisplay, vrControls, arView;
+var canvas, camera, scene, renderer, reticle;
+var mesh,helper;
+var modelReady = false;
+var posReady   = false;
+var clock      = new THREE.Clock();
+/*
+ * モデルのスケールを変更する場合はモーションの崩壊に注意
+ * モーションの想定したスケールとモデルサイズが乖離しているとモーションが崩壊する
+ * 0.008は卓上サイズ
+ * 1.0でモーションが崩れないのは確認
+ */
+const modelScale    = 0.008;
+const modelFile     = 'mmd/Alicia/Alicia_solid.pmx';
+const vmdFiles      = ['mmd/step.vmd'];
+//モーションの実行許可．モデルを小さくしているので実行許可を出していない．
+const isAllowMotion = false;
+const version       = 0.10;
+
+alert(
+    'versuion : ' + version +
+    ' モデルの読み込みには時間がかかります'
+);
+
+THREE.ARUtils.getARDisplay().then(function (display) {
+    if (display) {
+        vrFrameData = new VRFrameData();
+        vrDisplay   = display;
+        init();
+    } else {
+        THREE.ARUtils.displayUnsupportedMessage();
+    }
+});
+
+function init() {
+    var arDebug = new THREE.ARDebug(vrDisplay);
+    document.body.appendChild(arDebug.getElement());
+
+    renderer = new THREE.WebGLRenderer({alpha: true});
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.autoClear = false;
+    canvas = renderer.domElement;
+    scene  = new THREE.Scene();
+    arView = new THREE.ARView(vrDisplay, renderer);
+    camera = new THREE.ARPerspectiveCamera(
+                vrDisplay,
+                60,
+                window.innerWidth / window.innerHeight,
+                vrDisplay.depthNear,
+                vrDisplay.depthFar
+            );
+
+    reticle    = new THREE.ARReticle(vrDisplay, 0.03, 0.04, 0xff0077, 0.25);
+    vrControls = new THREE.VRControls(camera);
+
+    document.body.appendChild(canvas);
+    scene.add(reticle);
+    canvas.addEventListener('touchstart', onClick, false);
+    window.addEventListener('resize', onWindowResize, false);
+
+    mmdInit();
+    update();
+}
+
+function update() {
+    camera.updateProjectionMatrix();
+    vrDisplay.getFrameData(vrFrameData);
+    vrControls.update();
+    arView.render();
+    reticle.update(0.5, 0.5);
+    renderer.clearDepth();
+    if(isAllowMotion && modelReady && posReady){
+        helper.animate(clock.getDelta());
+    }
+    renderer.render(scene, camera);
+    vrDisplay.requestAnimationFrame(update);
+}
+
+function mmdInit(){
+    var ambient = new THREE.AmbientLight(0xffffff,0.7);
+    scene.add(ambient);
+    helper = new THREE.MMDHelper(renderer);
+    var onProgress = function (xhr) {};
+    var onError    = function (xhr) { alert('読み込みに失敗しました。');};
+    var loader     = new THREE.MMDLoader();
+
+    loader.load(modelFile,vmdFiles,function (object) {
+        mesh = object;
+        //僻地に読み込んだモデルを表示しておく
+        mesh.position.set(10000, 10000, 10000);
+        helper.add(mesh);
+        helper.setAnimation(mesh);
+        helper.setPhysics(mesh);
+        helper.unifyAnimationDuration({afterglow:2.0});
+        mesh.scale.x = modelScale;
+        mesh.scale.y = modelScale;
+        mesh.scale.z = modelScale;
+        scene.add(mesh);
+        modelReady = true;
+    },onProgress,onError);
+}
+
+function onClick(e){
+    if(!e.touches[0]) return;
+    var hits = vrDisplay.hitTest(0.5, 0.5);
+    if (hits && hits.length) {
+        posReady = true;
+        var hit = hits[0];
+        THREE.ARUtils.placeObjectAtHit(
+            mesh,
+            hit,
+            1,
+            true
+        );
+    }
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+</script>
+</body>
+</html>
