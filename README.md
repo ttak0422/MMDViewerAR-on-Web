@@ -6,4 +6,5 @@ Three.ar.jsの動作するブラウザで動作します．
 
 ![Demo](https://github.com/ttak0422/20180512LT_Demo/blob/master/demo.gif)
 
-ニコニ立体ちゃんことアリシアソリッド(http://3d.nicovideo.jp/alicia/)のモデルを利用しています．
+ニコニ立体ちゃんことアリシアソリッド(http://3d.nicovideo.jp/alicia/)
+のモデルを利用しています．
