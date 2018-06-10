@@ -46,21 +46,11 @@ var posReady   = false;
 var clock      = new THREE.Clock();
 /*
  * モデルのスケールを変更する場合はモーションの崩壊に注意
- * モーションの想定したスケールとモデルサイズが乖離しているとモーションが崩壊する
- * 0.008は卓上サイズ
- * 1.0でモーションが崩れないのは確認
+ * 0.01は卓上サイズ
  */
-const modelScale    = 0.008;
+const modelScale    = 0.01;
 const modelFile     = 'mmd/Alicia/Alicia_solid.pmx';
 const vmdFiles      = ['mmd/step.vmd'];
-//モーションの実行許可．モデルを小さくしているので実行許可を出していない．
-const isAllowMotion = false;
-const version       = 0.10;
-
-alert(
-    'versuion : ' + version +
-    ' モデルの読み込みには時間がかかります'
-);
 
 THREE.ARUtils.getARDisplay().then(function (display) {
     if (display) {
@@ -72,10 +62,7 @@ THREE.ARUtils.getARDisplay().then(function (display) {
     }
 });
 
-function init() {
-    var arDebug = new THREE.ARDebug(vrDisplay);
-    document.body.appendChild(arDebug.getElement());
-
+function init() {    
     renderer = new THREE.WebGLRenderer({alpha: true});
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -110,7 +97,7 @@ function update() {
     arView.render();
     reticle.update(0.5, 0.5);
     renderer.clearDepth();
-    if(isAllowMotion && modelReady && posReady){
+    if(modelReady && posReady){
         helper.animate(clock.getDelta());
     }
     renderer.render(scene, camera);
@@ -129,13 +116,10 @@ function mmdInit(){
         mesh = object;
         //僻地に読み込んだモデルを表示しておく
         mesh.position.set(10000, 10000, 10000);
+        mesh.scale.set(modelScale, modelScale, modelScale);
         helper.add(mesh);
         helper.setAnimation(mesh);
-        helper.setPhysics(mesh);
         helper.unifyAnimationDuration({afterglow:2.0});
-        mesh.scale.x = modelScale;
-        mesh.scale.y = modelScale;
-        mesh.scale.z = modelScale;
         scene.add(mesh);
         modelReady = true;
     },onProgress,onError);
