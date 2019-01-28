@@ -1,3 +1,9 @@
+**New WebAR MMDViewer[Here](https://github.com/ttak0422/MMDViewer-WebAR-8thWall)**
+
+New MMDViewer works with normal browser!!
+
+---
+
 # CharacterViewerAR on Web
 
 Three.ar.jsの動作するブラウザで動作します．
